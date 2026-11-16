@@ -196,10 +196,35 @@ check_conflicts() {
 pkg_installed() { dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q '^install ok installed$'; }
 apt_has()       { apt-cache show "$1" >/dev/null 2>&1; }
 
+# True when the pinned upstream version is already built and installed.
+shairport_built() {
+  local v=""
+  [[ -x /usr/local/bin/shairport-sync ]] && v=$(/usr/local/bin/shairport-sync -V 2>/dev/null || true)
+  [[ $v == "$SHAIRPORT_TAG"-AirPlay2-* ]]
+}
+nqptp_built() {
+  local v=""
+  [[ -x /usr/local/bin/nqptp ]] && v=$(/usr/local/bin/nqptp -V 2>&1 || true)
+  [[ $v == "Version: $NQPTP_TAG."* ]]
+}
+
+# True when something has to be compiled, so the build tools are needed.
+needs_build() {
+  if [[ $SHAIRPORT_FROM == source ]]; then
+    ! shairport_built || ! nqptp_built
+  else
+    ! apt_has nqptp && ! nqptp_built
+  fi
+}
+
 install_packages() {
   log "Installing packages"
   local pkgs=(snapserver snapclient alsa-utils avahi-daemon) missing=() p
-  if [[ $SHAIRPORT_FROM == source ]]; then
+  if [[ $SHAIRPORT_FROM == apt ]]; then
+    pkgs+=(shairport-sync)
+    if apt_has nqptp; then pkgs+=(nqptp); fi
+  fi
+  if needs_build; then
     # From shairport-sync's BUILD.md (AirPlay 2) plus nqptp's needs.
     pkgs+=(build-essential git autoconf automake libtool libpopt-dev libconfig-dev
            libasound2-dev libavahi-client-dev libssl-dev libsoxr-dev libplist-dev
@@ -207,8 +232,7 @@ install_packages() {
            libavcodec-dev libavformat-dev)
     [[ $CODENAME == bookworm ]] || pkgs+=(systemd-dev)
   else
-    pkgs+=(shairport-sync)
-    if apt_has nqptp; then pkgs+=(nqptp); fi
+    info "shairport-sync/nqptp builds are already installed, so no build tools are needed"
   fi
   for p in "${pkgs[@]}"; do pkg_installed "$p" || missing+=("$p"); done
   if (( ${#missing[@]} == 0 )); then
@@ -254,9 +278,7 @@ build_upstream() {
 install_shairport() {
   log "Installing shairport-sync ($SHAIRPORT_FROM)"
   if [[ $SHAIRPORT_FROM == source ]]; then
-    local v=""
-    [[ -x /usr/local/bin/shairport-sync ]] && v=$(/usr/local/bin/shairport-sync -V 2>/dev/null || true)
-    if [[ $v == "$SHAIRPORT_TAG"-AirPlay2-* ]]; then
+    if shairport_built; then
       info "shairport-sync $SHAIRPORT_TAG with AirPlay 2 already installed"
     else
       build_upstream shairport-sync "$SHAIRPORT_TAG" \
@@ -282,9 +304,7 @@ install_nqptp() {
     info "nqptp will come from apt"
   else
     log "Installing nqptp $NQPTP_TAG from source"
-    local v=""
-    [[ -x /usr/local/bin/nqptp ]] && v=$(/usr/local/bin/nqptp -V 2>&1 || true)
-    if [[ $v == "Version: $NQPTP_TAG."* ]]; then
+    if nqptp_built; then
       info "nqptp $NQPTP_TAG already installed"
     else
       build_upstream nqptp "$NQPTP_TAG" --with-systemd-startup
@@ -378,7 +398,13 @@ activate() {
   else
     run sudo loginctl enable-linger "$USER"
   fi
-  if (( UDEV_CHANGED )); then run sudo udevadm control --reload-rules; fi
+  if (( UDEV_CHANGED )); then
+    run sudo udevadm control --reload-rules
+    # Re-apply the rules to speakers that are already plugged in, so they get
+    # their new names without unplugging them.
+    run sudo udevadm trigger --action=add --subsystem-match=sound --sysname-match='card*'
+    run sudo udevadm settle
+  fi
   if (( WIREPLUMBER_CHANGED )) && { ! live || systemctl --user is-active --quiet wireplumber; }; then
     run systemctl --user restart wireplumber
   fi
@@ -391,7 +417,7 @@ activate() {
   fi
   if live && ! [[ -e /proc/asound/JBL_LEFT && -e /proc/asound/JBL_RIGHT ]]; then
     warn "the speakers don't have their new names (JBL_LEFT / JBL_RIGHT) yet.
-         Unplug and replug both USB cables, or reboot. Playback starts once they reappear."
+         Check both are in USB audio mode, then unplug and replug them, or reboot."
   fi
 }
 
