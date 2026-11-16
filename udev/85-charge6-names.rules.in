@@ -1,0 +1,4 @@
+# charge6-airplay-stereo: stable ALSA card names for the two JBL Charge 6
+# speakers, matched on their USB serial numbers. Filled in by install.sh.
+SUBSYSTEM=="sound", KERNEL=="card*", ATTRS{serial}=="@LEFT_SERIAL@", ATTR{id}="JBL_LEFT"
+SUBSYSTEM=="sound", KERNEL=="card*", ATTRS{serial}=="@RIGHT_SERIAL@", ATTR{id}="JBL_RIGHT"

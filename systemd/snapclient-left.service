@@ -1,0 +1,14 @@
+[Unit]
+Description=charge6-airplay-stereo: Snapcast client for the LEFT speaker
+After=snapserver.service
+Wants=snapserver.service
+
+[Service]
+ExecStart=/usr/bin/snapclient -h 127.0.0.1 -i 1 --hostID jbl-left -s jbl_left --mixer none --logsink stdout
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=70
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

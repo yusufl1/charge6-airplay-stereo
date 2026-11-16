@@ -1,0 +1,32 @@
+# Snapcast server for charge6-airplay-stereo.
+# Installed to ~/.config/snapcast/snapserver.conf by install.sh.
+# Placeholders (@...@) are filled in by install.sh.
+#
+# Everything listens on 127.0.0.1 only: the server and both clients run on the Pi.
+
+[server]
+datadir = @SNAP_DATA_DIR@
+
+[http]
+enabled = true
+bind_to_address = 127.0.0.1
+port = 1780
+doc_root = /usr/share/snapserver/snapweb
+
+[tcp]
+enabled = true
+bind_to_address = 127.0.0.1
+port = 1705
+
+[stream]
+bind_to_address = 127.0.0.1
+port = 1704
+# shairport-sync writes 48 kHz / 24-bit / stereo into this FIFO.
+source = pipe://@RUNTIME_DIR@/snapfifo?name=AirPlay&mode=read&sampleformat=48000:24:2
+sampleformat = 48000:24:2
+codec = pcm
+chunk_ms = 20
+buffer = 1000
+
+[logging]
+filter = *:info

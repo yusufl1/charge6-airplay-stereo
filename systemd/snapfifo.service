@@ -1,0 +1,16 @@
+[Unit]
+Description=charge6-airplay-stereo: hold the AirPlay->Snapcast FIFO open
+Before=snapserver.service shairport-sync.service
+
+[Service]
+# %t is the user runtime directory (/run/user/<uid>).
+ExecStartPre=/bin/sh -c '[ -p "%t/snapfifo" ] || { rm -f "%t/snapfifo"; mkfifo -m 660 "%t/snapfifo"; }'
+# Opening a FIFO read-write never blocks and keeps both ends referenced, so
+# snapserver never sees EOF and shairport-sync always has a reader.
+# This process never reads or writes.
+ExecStart=/bin/sh -c 'exec 3<>"%t/snapfifo"; exec sleep infinity'
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,28 @@
+# One ALSA device per speaker, used by the two snapclients.
+# Each device takes one channel of the stereo stream and plays it on BOTH
+# drivers of that speaker, so the left speaker is fully "left" and the right
+# speaker fully "right".
+#
+# JBL_LEFT / JBL_RIGHT are card names given by udev/85-charge6-names.rules,
+# matched on each speaker's USB serial number.
+# The Charge 6 USB audio interface takes S24_3LE (or S16_LE) at 48 kHz only.
+pcm.jbl_left_route {
+  type route
+  slave { pcm "hw:JBL_LEFT,0" channels 2 format S24_3LE }
+  ttable { 0.0 1  0.1 1 }
+}
+pcm.jbl_left {
+  type plug
+  slave { pcm "jbl_left_route" format S24_3LE rate 48000 }
+  hint { show on description "Charge 6 stereo: LEFT speaker" }
+}
+pcm.jbl_right_route {
+  type route
+  slave { pcm "hw:JBL_RIGHT,0" channels 2 format S24_3LE }
+  ttable { 1.0 1  1.1 1 }
+}
+pcm.jbl_right {
+  type plug
+  slave { pcm "jbl_right_route" format S24_3LE rate 48000 }
+  hint { show on description "Charge 6 stereo: RIGHT speaker" }
+}

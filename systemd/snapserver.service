@@ -1,0 +1,14 @@
+[Unit]
+Description=charge6-airplay-stereo: Snapcast server (AirPlay FIFO -> speaker clients)
+Requires=snapfifo.service
+After=network-online.target snapfifo.service
+
+[Service]
+ExecStart=/usr/bin/snapserver -c %h/.config/snapcast/snapserver.conf
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=60
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

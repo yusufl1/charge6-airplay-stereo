@@ -1,0 +1,18 @@
+// shairport-sync configuration for charge6-airplay-stereo.
+// Installed to ~/.config/shairport-sync/shairport-sync.conf by install.sh.
+// Placeholders (@...@) are filled in by install.sh.
+//
+// shairport-sync does not talk to the speakers itself. It writes raw PCM into
+// a FIFO that snapserver reads; the two snapclients play it on the speakers.
+
+general = {
+  name = "@AIRPLAY_NAME@";        // The name you see in the AirPlay menu.
+  output_backend = "pipe";
+};
+
+pipe = {
+  name = "@RUNTIME_DIR@/snapfifo"; // Created and held open by snapfifo.service.
+  output_rate = 48000;             // The Charge 6 only accepts 48 kHz over USB.
+  output_format = "S24";           // 24-bit, matches sampleformat in snapserver.conf.
+  output_channels = 2;
+};

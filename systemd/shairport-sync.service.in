@@ -1,0 +1,13 @@
+[Unit]
+Description=charge6-airplay-stereo: Shairport Sync AirPlay receiver
+Requires=snapfifo.service
+After=network-online.target snapfifo.service snapserver.service
+Wants=snapserver.service
+
+[Service]
+ExecStart=@SHAIRPORT_BIN@ -c %h/.config/shairport-sync/shairport-sync.conf
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

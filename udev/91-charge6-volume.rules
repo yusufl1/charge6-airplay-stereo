@@ -1,0 +1,5 @@
+# charge6-airplay-stereo: set the Charge 6 hardware volume to 100% whenever it
+# is plugged in (it falls back to about 66% each time it re-enumerates).
+# Loudness is then controlled by the AirPlay volume slider (software volume in
+# shairport-sync).
+SUBSYSTEM=="sound", KERNEL=="controlC*", ATTRS{idVendor}=="0ecb", ATTRS{idProduct}=="20e3", RUN+="/usr/bin/amixer -c %n sset PCM 100%%"
